@@ -4,6 +4,7 @@
 ![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
 ![License](https://img.shields.io/badge/License-Educational-orange?style=for-the-badge)
 ![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
+[![Live Preview](https://img.shields.io/badge/Live%20Preview-Open%20Demo-4c1?style=for-the-badge)](https://cardingtoolsv2.vercel.app/)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Us-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/rgWcEw5G8a)
 
 A modern, professional web application for credit card testing and validation. Built with Flask, featuring an animated UI, Stripe API integration, and advanced security measures.
