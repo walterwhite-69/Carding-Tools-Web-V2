@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Tools & BIN Checker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: rgba(139, 92, 246, 0.1);
+            --bg-card: rgba(139, 92, 246, 0.05);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(139, 92, 246, 0.3);
+            --accent-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            --accent-gradient-2: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --accent-gradient-3: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+            --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --fail-gradient: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+        }
+
+        body.light-mode {
+            --bg-primary: #ffffff;
+            --bg-secondary: rgba(139, 92, 246, 0.08);
+            --bg-card: rgba(139, 92, 246, 0.03);
+            --text-primary: #1a1a2e;
+            --text-secondary: rgba(0, 0, 0, 0.65);
+            --border-color: rgba(139, 92, 246, 0.25);
+        }
+        
+        body.light-mode .squares-canvas {
+            opacity: 0.3;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow-x: hidden;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        .squares-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            background: rgba(15, 15, 35, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 28px;
+            padding: 45px;
+            box-shadow: 0 20px 60px 0 rgba(139, 92, 246, 0.3), 0 0 0 1px var(--border-color);
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 20px;
+            z-index: 1;
+        }
+        
+        body.light-mode .container {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            width: 65px;
+            height: 32px;
+            background: var(--bg-secondary);
+            border-radius: 30px;
+            cursor: pointer;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle::before {
+            content: '🌙';
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            width: 24px;
+            height: 24px;
+            background: var(--accent-gradient);
+            border-radius: 50%;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+        }
+
+        body.light-mode .theme-toggle::before {
+            content: '☀️';
+            transform: translateX(31px);
+        }
+
+        h1 {
+            font-family: 'Outfit', 'Inter', sans-serif;
+            background: linear-gradient(270deg, #667eea, #764ba2, #f093fb, #667eea);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 35px;
+            margin-top: 10px;
+            font-size: 2.8em;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            animation: gradientShift 3s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .tabs {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 35px;
+            background: var(--bg-secondary);
+            padding: 8px;
+            border-radius: 18px;
+            transition: background 0.4s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            padding: 14px 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: break-word;
+            position: relative;
+            text-align: center;
+            line-height: 1.3;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-card);
+            transform: translateY(-1px);
+        }
+
+        .tab-btn.active {
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .tabs-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+        label {
+            display: block;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            font-weight: 600;
+            transition: color 0.4s ease;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: 14px;
+            color: var(--text-primary);
+            font-size: 15px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .select-wrapper::after {
+            content: '';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid rgba(139, 92, 246, 0.8);
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .select-wrapper:hover::after {
+            border-top-color: #a78bfa;
+        }
+
+        select {
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            padding-right: 45px;
+        }
+
+        select option {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 12px;
+            font-weight: 500;
+        }
+
+        select:hover {
+            border-color: #a78bfa;
+            background-color: var(--bg-card);
+        }
+
+        .custom-select {
+            position: relative;
+            width: 100%;
+        }
+
+        .custom-select select {
+            display: none !important;
+        }
+        
+        .select-wrapper.custom-select::after {
+            display: none !important;
+        }
+
+        .custom-select-trigger {
+            position: relative;
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: 14px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            user-select: none;
+            opacity: 1;
+        }
+        
+        .custom-select-trigger span {
+            opacity: 1;
+            color: var(--text-primary);
+        }
+
+        .custom-select-trigger:hover {
+            border-color: #a78bfa;
+            background-color: var(--bg-card);
+        }
+
+        .custom-select.open .custom-select-trigger {
+            border-color: #8b5cf6;
+            background: var(--bg-card);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+        }
+
+        .custom-select-arrow {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid rgba(139, 92, 246, 0.8);
+            transition: all 0.3s ease;
+            margin-left: 10px;
+        }
+
+        .custom-select.open .custom-select-arrow {
+            transform: rotate(180deg);
+            border-top-color: #a78bfa;
+        }
+
+        .custom-select-options {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: rgba(15, 15, 35, 0.95);
+            border: 2px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            max-height: 250px;
+            overflow-y: auto;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        body.light-mode .custom-select-options {
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .custom-select.open .custom-select-options {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .custom-option {
+            padding: 14px 20px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        @media (hover: hover) {
+            .custom-option:hover {
+                background: var(--bg-card);
+                color: #a78bfa;
+            }
+        }
+        
+        .custom-option:active {
+            background: var(--bg-card);
+            color: #a78bfa;
+        }
+
+        .custom-option.selected {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+            font-weight: 600;
+        }
+
+        .custom-select-options::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-select-options::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-select-options::-webkit-scrollbar-thumb {
+            background: rgba(139, 92, 246, 0.5);
+            border-radius: 4px;
+        }
+
+        .custom-select-options::-webkit-scrollbar-thumb:hover {
+            background: rgba(139, 92, 246, 0.7);
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            background: var(--bg-card);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+        }
+
+        textarea {
+            min-height: 160px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+
+        .row-2 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 18px;
+        }
+
+        button {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            background: var(--accent-gradient);
+            color: white;
+            font-size: 17px;
+            font-weight: 700;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5);
+        }
+
+        button:active {
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-box {
+            margin-top: 22px;
+            padding: 22px;
+            background: var(--bg-secondary);
+            border-radius: 14px;
+            border: 2px solid var(--border-color);
+            min-height: 70px;
+            transition: all 0.4s ease;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            color: var(--text-primary);
+            line-height: 1.8;
+            max-height: 350px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .result-text {
+            color: var(--text-primary);
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            word-break: break-all;
+            flex: 1;
+            transition: color 0.4s ease;
+        }
+
+        .copy-btn {
+            padding: 12px 24px;
+            width: auto;
+            margin: 0;
+            background: var(--accent-gradient-2);
+            color: white;
+            font-size: 15px;
+            box-shadow: 0 6px 20px rgba(250, 112, 154, 0.3);
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-gradient-2);
+            box-shadow: 0 8px 25px rgba(250, 112, 154, 0.4);
+        }
+
+        .checker-results {
+            margin-top: 22px;
+            max-height: 450px;
+            overflow-y: auto;
+        }
+
+        .card-result {
+            padding: 18px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            animation: slideIn 0.3s ease-out;
+            transition: all 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-25px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .card-result.success {
+            background: rgba(56, 239, 125, 0.15);
+            border-color: rgba(56, 239, 125, 0.6);
+        }
+
+        .card-result.fail {
+            background: rgba(255, 106, 0, 0.15);
+            border-color: rgba(255, 106, 0, 0.6);
+        }
+
+        .card-result.unknown {
+            background: rgba(251, 191, 36, 0.15);
+            border-color: rgba(251, 191, 36, 0.6);
+        }
+
+        .card-number {
+            color: var(--text-primary);
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            margin-bottom: 8px;
+            transition: color 0.4s ease;
+            font-size: 15px;
+        }
+
+        .card-status {
+            color: var(--text-secondary);
+            font-size: 14px;
+            transition: color 0.4s ease;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-right: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.success {
+            background: rgba(56, 239, 125, 0.3);
+            color: #38ef7d;
+        }
+
+        .status-badge.fail {
+            background: rgba(255, 106, 0, 0.3);
+            color: #ff6a00;
+        }
+
+        .status-badge.unknown {
+            background: rgba(251, 191, 36, 0.3);
+            color: #fbbf24;
+        }
+
+        .progress-bar {
+            margin-top: 18px;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: background 0.4s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success-gradient);
+            transition: width 0.3s ease;
+        }
+
+        .countdown {
+            text-align: center;
+            color: var(--text-primary);
+            margin-top: 12px;
+            font-size: 14px;
+            opacity: 0.85;
+            transition: color 0.4s ease;
+            font-weight: 600;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border-color);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .button-group button {
+            margin-top: 0;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 14px;
+            padding: 25px;
+            transition: all 0.4s ease;
+            z-index: 1;
+            position: relative;
+        }
+
+        .footer-text {
+            font-family: 'Outfit', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            display: inline-block;
+            position: relative;
+            text-shadow: 
+                0 0 10px rgba(102, 126, 234, 0.5),
+                0 0 20px rgba(118, 75, 162, 0.3),
+                0 0 30px rgba(240, 147, 251, 0.2);
+            animation: glitchText 3s ease-in-out infinite;
+        }
+
+        .footer-text::before {
+            content: 'Made by Walter';
+            position: absolute;
+            left: -2px;
+            text-shadow: 2px 0 #667eea;
+            top: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            overflow: hidden;
+            animation: glitch1 2.5s infinite;
+        }
+
+        .footer-text::after {
+            content: 'Made by Walter';
+            position: absolute;
+            left: 2px;
+            text-shadow: -2px 0 #f093fb;
+            top: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            overflow: hidden;
+            animation: glitch2 2.5s infinite;
+        }
+
+        @keyframes glitchText {
+            0%, 100% { 
+                transform: translate(0);
+            }
+            20% { 
+                transform: translate(-2px, 2px);
+            }
+            40% { 
+                transform: translate(-2px, -2px);
+            }
+            60% { 
+                transform: translate(2px, 2px);
+            }
+            80% { 
+                transform: translate(2px, -2px);
+            }
+        }
+
+        @keyframes glitch1 {
+            0%, 100% {
+                clip: rect(42px, 9999px, 44px, 0);
+                opacity: 0;
+            }
+            10% {
+                clip: rect(12px, 9999px, 59px, 0);
+                opacity: 1;
+            }
+            20% {
+                clip: rect(48px, 9999px, 29px, 0);
+                opacity: 0;
+            }
+        }
+
+        @keyframes glitch2 {
+            0%, 100% {
+                clip: rect(65px, 9999px, 119px, 0);
+                opacity: 0;
+            }
+            15% {
+                clip: rect(15px, 9999px, 94px, 0);
+                opacity: 1;
+            }
+            25% {
+                clip: rect(60px, 9999px, 85px, 0);
+                opacity: 0;
+            }
+        }
+
+        .bin-info {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 14px;
+            padding: 22px;
+            margin-top: 22px;
+        }
+
+        .bin-info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .bin-info-item:last-child {
+            border-bottom: none;
+        }
+
+        .bin-info-label {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .bin-info-value {
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        * {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 25px;
+                border-radius: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+                margin-bottom: 25px;
+            }
+
+            .theme-toggle {
+                top: 18px;
+                right: 18px;
+                width: 55px;
+                height: 28px;
+            }
+
+            .theme-toggle::before {
+                width: 22px;
+                height: 22px;
+                font-size: 11px;
+            }
+
+            body.light-mode .theme-toggle::before {
+                transform: translateX(25px);
+            }
+
+            .tabs {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .tab-btn {
+                padding: 10px 6px;
+                font-size: 11px;
+                min-height: 40px;
+                line-height: 1.2;
+            }
+
+            .row {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            .row-2 {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            input, textarea {
+                padding: 14px 18px;
+                font-size: 14px;
+            }
+
+            select {
+                padding: 14px 18px;
+                padding-right: 45px;
+                font-size: 14px;
+            }
+
+            .select-wrapper::after {
+                top: 50%;
+                transform: translateY(-50%);
+            }
+
+            button {
+                padding: 16px;
+                font-size: 16px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .bin-info-item {
+                flex-direction: column;
+                gap: 6px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.7em;
+            }
+
+            .tab-btn {
+                padding: 8px 4px;
+                font-size: 10px;
+                min-height: 38px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas class="squares-canvas" id="squaresCanvas"></canvas>
+    <div class="container">
+        <div class="theme-toggle" onclick="toggleTheme()"></div>
+        
+        <h1>Carding Tools V2</h1>
+        
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('card-generator')">Card Generator</button>
+            <button class="tab-btn" onclick="switchTab('bin-generator')">BIN Gen</button>
+            <button class="tab-btn" onclick="switchTab('bin-checker')">BIN Checker</button>
+            <button class="tab-btn" onclick="switchTab('stripe-checker')">Stripe Checker</button>
+        </div>
+
+        <div class="tabs-wrapper">
+        <div id="card-generator" class="tab-content active">
+            <div class="row-2">
+                <div class="form-group">
+                    <label>BIN (Card Prefix)</label>
+                    <input type="text" id="bin" placeholder="e.g., 4242 or leave empty">
+                </div>
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="number" id="amount" placeholder="1" value="1" min="1" max="100">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="form-group">
+                    <label>Month (MM)</label>
+                    <div class="select-wrapper">
+                        <select id="month">
+                            <option value="">Random</option>
+                            <option value="01">01</option>
+                            <option value="02">02</option>
+                            <option value="03">03</option>
+                            <option value="04">04</option>
+                            <option value="05">05</option>
+                            <option value="06">06</option>
+                            <option value="07">07</option>
+                            <option value="08">08</option>
+                            <option value="09">09</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Year (YYYY)</label>
+                    <div class="select-wrapper">
+                        <select id="year">
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>CVV</label>
+                    <input type="text" id="cvv" placeholder="Auto-generate">
+                </div>
+            </div>
+
+            <button id="generateBtn" onclick="generateCards()">Generate Cards</button>
+
+            <div class="result-box" id="cardsResultBox" style="display: none;"></div>
+
+            <div class="button-group" id="copyButtons" style="display: none;">
+                <button class="copy-btn" onclick="copyAllCards()">Copy All</button>
+                <button class="copy-btn" onclick="clearCards()">Clear</button>
+            </div>
+        </div>
+
+        <div id="bin-generator" class="tab-content">
+            <div class="row-2">
+                <div class="form-group">
+                    <label>Card Type</label>
+                    <div class="select-wrapper">
+                        <select id="cardType">
+                            <option value="visa">Visa</option>
+                            <option value="mastercard">Mastercard</option>
+                            <option value="amex">American Express</option>
+                            <option value="discover">Discover</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Generation Mode</label>
+                    <div class="select-wrapper">
+                        <select id="generationMode">
+                            <option value="random">Generate Randomly</option>
+                            <option value="database">Grab from Database</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Amount</label>
+                <input type="number" id="binAmount" placeholder="1" value="1" min="1" max="100">
+            </div>
+
+            <button id="binGenerateBtn" onclick="generateBINs()">Generate BINs</button>
+
+            <div class="result-box" id="binResultBox" style="display: none;"></div>
+
+            <div class="button-group" id="binCopyButtons" style="display: none;">
+                <button class="copy-btn" onclick="copyAllBINs()">Copy All</button>
+                <button class="copy-btn" onclick="clearBINs()">Clear</button>
+            </div>
+        </div>
+
+        <div id="bin-checker" class="tab-content">
+            <div class="form-group">
+                <label>BIN Numbers (one per line)</label>
+                <textarea id="binInput" placeholder="434907&#10;402360&#10;411111"></textarea>
+            </div>
+
+            <button id="checkBinBtn" onclick="checkBulkBINs()">Check BINs</button>
+
+            <div class="progress-bar" id="binProgressBar" style="display: none;">
+                <div class="progress-fill" id="binProgressFill"></div>
+            </div>
+
+            <div id="binStats" style="display: none; margin-top: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 14px; border: 2px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; gap: 20px;">
+                    <div style="flex: 1;">
+                        <div style="color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Database</div>
+                        <div id="totalDatabase" style="color: var(--text-primary); font-size: 24px; font-weight: 700;"></div>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">Checked BINs</div>
+                        <div id="checkedBins" style="color: var(--text-primary); font-size: 24px; font-weight: 700;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="binInfoContainer"></div>
+        </div>
+
+        <div id="stripe-checker" class="tab-content">
+            <div class="form-group">
+                <label>Cards to Check (one per line)</label>
+                <textarea id="cardsInput" placeholder="4242424242424242|03|2029|123&#10;5555555555554444|12|2028|456"></textarea>
+            </div>
+
+            <button id="checkBtn" onclick="checkCards()">Check Cards</button>
+
+            <div class="progress-bar" id="progressBar" style="display: none;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="countdown" id="countdown" style="display: none;"></div>
+
+            <div class="checker-results" id="checkerResults"></div>
+        </div>
+        </div>
+    </div>
+
+    <div class="footer"><span class="footer-text">Made by Walter</span></div>
+
+    <script>
+        const canvas = document.getElementById('squaresCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const squareSize = 40;
+        const speed = 1;
+        const borderColor = 'rgba(139, 92, 246, 0.15)';
+        const hoverFillColor = 'rgba(139, 92, 246, 0.05)';
+        
+        let numSquaresX, numSquaresY;
+        let gridOffset = { x: 0, y: 0 };
+        let hoveredSquare = null;
+        let animationId;
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            numSquaresX = Math.ceil(canvas.width / squareSize) + 1;
+            numSquaresY = Math.ceil(canvas.height / squareSize) + 1;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const startX = Math.floor(gridOffset.x / squareSize) * squareSize;
+            const startY = Math.floor(gridOffset.y / squareSize) * squareSize;
+            
+            for (let x = startX; x < canvas.width + squareSize; x += squareSize) {
+                for (let y = startY; y < canvas.height + squareSize; y += squareSize) {
+                    const squareX = x - (gridOffset.x % squareSize);
+                    const squareY = y - (gridOffset.y % squareSize);
+                    
+                    if (hoveredSquare && 
+                        Math.floor((x - startX) / squareSize) === hoveredSquare.x &&
+                        Math.floor((y - startY) / squareSize) === hoveredSquare.y) {
+                        ctx.fillStyle = hoverFillColor;
+                        ctx.fillRect(squareX, squareY, squareSize, squareSize);
+                    }
+                    
+                    ctx.strokeStyle = borderColor;
+                    ctx.strokeRect(squareX, squareY, squareSize, squareSize);
+                }
+            }
+            
+            const gradient = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2,
+                Math.sqrt(canvas.width ** 2 + canvas.height ** 2) / 2
+            );
+            gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            gradient.addColorStop(1, 'rgba(15, 15, 35, 0.8)');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        function updateAnimation() {
+            gridOffset.x = (gridOffset.x - speed + squareSize) % squareSize;
+            gridOffset.y = (gridOffset.y - speed + squareSize) % squareSize;
+            
+            drawGrid();
+            animationId = requestAnimationFrame(updateAnimation);
+        }
+        
+        canvas.addEventListener('mousemove', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            
+            const startX = Math.floor(gridOffset.x / squareSize) * squareSize;
+            const startY = Math.floor(gridOffset.y / squareSize) * squareSize;
+            
+            const hoveredSquareX = Math.floor((mouseX + gridOffset.x - startX) / squareSize);
+            const hoveredSquareY = Math.floor((mouseY + gridOffset.y - startY) / squareSize);
+            
+            if (!hoveredSquare || hoveredSquare.x !== hoveredSquareX || hoveredSquare.y !== hoveredSquareY) {
+                hoveredSquare = { x: hoveredSquareX, y: hoveredSquareY };
+            }
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            hoveredSquare = null;
+        });
+        
+        updateAnimation();
+
+        let generatedCardsList = [];
+        let generatedBINsList = [];
+        let checkedBINsSet = new Set();
+        let totalDatabaseBINs = 0;
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+        }
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-mode');
+        }
+
+        const yearSelect = document.getElementById('year');
+        yearSelect.innerHTML = '<option value="">Random</option>';
+        const currentYear = new Date().getFullYear();
+        for (let year = currentYear; year <= 2050; year++) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearSelect.appendChild(option);
+        }
+
+        function initCustomDropdowns() {
+            document.querySelectorAll('.select-wrapper select').forEach(select => {
+                const wrapper = select.parentElement;
+                
+                if (wrapper.querySelector('.custom-select-trigger')) {
+                    return;
+                }
+                
+                wrapper.classList.add('custom-select');
+                
+                const trigger = document.createElement('div');
+                trigger.className = 'custom-select-trigger';
+                trigger.innerHTML = `<span>${select.options[select.selectedIndex].text}</span><div class="custom-select-arrow"></div>`;
+                
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = 'custom-select-options';
+                
+                Array.from(select.options).forEach((option, index) => {
+                    const customOption = document.createElement('div');
+                    customOption.className = 'custom-option';
+                    if (index === select.selectedIndex) {
+                        customOption.classList.add('selected');
+                    }
+                    customOption.textContent = option.text;
+                    customOption.dataset.value = option.value;
+                    customOption.addEventListener('click', () => {
+                        select.selectedIndex = index;
+                        select.dispatchEvent(new Event('change'));
+                        trigger.querySelector('span').textContent = option.text;
+                        optionsContainer.querySelectorAll('.custom-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        customOption.classList.add('selected');
+                        wrapper.classList.remove('open');
+                    });
+                    optionsContainer.appendChild(customOption);
+                });
+                
+                trigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.querySelectorAll('.custom-select.open').forEach(s => {
+                        if (s !== wrapper) s.classList.remove('open');
+                    });
+                    wrapper.classList.toggle('open');
+                });
+                
+                wrapper.appendChild(trigger);
+                wrapper.appendChild(optionsContainer);
+            });
+            
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.custom-select.open').forEach(s => {
+                    s.classList.remove('open');
+                });
+            });
+        }
+        
+        setTimeout(() => {
+            initCustomDropdowns();
+        }, 100);
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            event.target.classList.add('active');
+            document.getElementById(tab).classList.add('active');
+        }
+
+        async function generateCards() {
+            const bin = document.getElementById('bin').value;
+            const month = document.getElementById('month').value;
+            const year = document.getElementById('year').value;
+            const cvv = document.getElementById('cvv').value;
+            const amount = parseInt(document.getElementById('amount').value) || 1;
+
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'Generating<span class="loading-spinner"></span>';
+
+            generatedCardsList = [];
+            const resultBox = document.getElementById('cardsResultBox');
+            resultBox.innerHTML = '';
+            resultBox.style.display = 'none';
+            document.getElementById('copyButtons').style.display = 'none';
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            for (let i = 0; i < amount; i++) {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ bin, month, year, cvv })
+                });
+
+                const data = await response.json();
+                generatedCardsList.push(data.card);
+
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+
+            resultBox.textContent = generatedCardsList.join('\n');
+            resultBox.style.display = 'block';
+            document.getElementById('copyButtons').style.display = 'flex';
+
+            btn.disabled = false;
+            btn.textContent = 'Generate Cards';
+        }
+
+        async function generateBINs() {
+            const cardType = document.getElementById('cardType').value;
+            const mode = document.getElementById('generationMode').value;
+            const amount = parseInt(document.getElementById('binAmount').value) || 1;
+
+            const btn = document.getElementById('binGenerateBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'Generating<span class="loading-spinner"></span>';
+
+            generatedBINsList = [];
+            const resultBox = document.getElementById('binResultBox');
+            resultBox.innerHTML = '';
+            resultBox.style.display = 'none';
+            document.getElementById('binCopyButtons').style.display = 'none';
+
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            if (mode === 'database') {
+                for (let i = 0; i < amount; i++) {
+                    const response = await fetch('/generate_bin', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ card_type: cardType, mode: 'database' })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        generatedBINsList.push(data.bin);
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+
+                resultBox.textContent = generatedBINsList.join('\n');
+            } else {
+                for (let i = 0; i < amount; i++) {
+                    const response = await fetch('/generate_bin', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ card_type: cardType, mode: 'random' })
+                    });
+
+                    const data = await response.json();
+                    generatedBINsList.push(data.bin);
+
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                resultBox.textContent = generatedBINsList.join('\n');
+            }
+
+            resultBox.style.display = 'block';
+            document.getElementById('binCopyButtons').style.display = 'flex';
+
+            btn.disabled = false;
+            btn.textContent = 'Generate BINs';
+        }
+
+        async function checkBulkBINs() {
+            const binInput = document.getElementById('binInput').value;
+            const bins = binInput.split('\n').filter(line => line.trim() !== '');
+            
+            if (bins.length === 0) {
+                alert('Please enter at least one BIN number');
+                return;
+            }
+
+            const btn = document.getElementById('checkBinBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'Checking<span class="loading-spinner"></span>';
+
+            const container = document.getElementById('binInfoContainer');
+            container.innerHTML = '';
+            
+            document.getElementById('binProgressBar').style.display = 'block';
+            
+            for (let i = 0; i < bins.length; i++) {
+                const binNumber = bins[i].trim();
+                
+                const progress = ((i + 1) / bins.length) * 100;
+                document.getElementById('binProgressFill').style.width = progress + '%';
+                
+                if (binNumber.length !== 6 || !/^\d+$/.test(binNumber)) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'bin-info';
+                    errorDiv.style.marginBottom = '15px';
+                    errorDiv.innerHTML = `
+                        <div class="bin-info-item">
+                            <span class="bin-info-label">BIN</span>
+                            <span class="bin-info-value" style="color: #ff6a00;">${binNumber} - Invalid Format</span>
+                        </div>
+                    `;
+                    container.appendChild(errorDiv);
+                    continue;
+                }
+
+                try {
+                    const response = await fetch('/check_bin', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ bin: binNumber })
+                    });
+
+                    const binInfoDiv = document.createElement('div');
+                    binInfoDiv.className = 'bin-info';
+                    binInfoDiv.style.marginBottom = '15px';
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        checkedBINsSet.add(binNumber);
+                        totalDatabaseBINs = data.total_database || 0;
+                        
+                        binInfoDiv.innerHTML = `
+                            <div class="bin-info-item">
+                                <span class="bin-info-label">BIN</span>
+                                <span class="bin-info-value">${data.bin}</span>
+                            </div>
+                            <div class="bin-info-item">
+                                <span class="bin-info-label">Brand</span>
+                                <span class="bin-info-value">${data.brand}</span>
+                            </div>
+                            <div class="bin-info-item">
+                                <span class="bin-info-label">Type</span>
+                                <span class="bin-info-value">${data.type}</span>
+                            </div>
+                            <div class="bin-info-item">
+                                <span class="bin-info-label">Category</span>
+                                <span class="bin-info-value">${data.category || 'N/A'}</span>
+                            </div>
+                            <div class="bin-info-item">
+                                <span class="bin-info-label">Issuer</span>
+                                <span class="bin-info-value">${data.issuer}</span>
+                            </div>
+                            <div class="bin-info-item">
+                                <span class="bin-info-label">Country</span>
+                                <span class="bin-info-value">${data.country}</span>
+                            </div>
+                        `;
+                    } else {
+                        const errorData = await response.json();
+                        totalDatabaseBINs = errorData.total_database || 0;
+                        
+                        binInfoDiv.innerHTML = `
+                            <div class="bin-info-item">
+                                <span class="bin-info-label">BIN</span>
+                                <span class="bin-info-value" style="color: var(--text-secondary);">${binNumber} - Not Found</span>
+                            </div>
+                        `;
+                    }
+                    
+                    container.appendChild(binInfoDiv);
+                } catch (error) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'bin-info';
+                    errorDiv.style.marginBottom = '15px';
+                    errorDiv.innerHTML = `
+                        <div class="bin-info-item">
+                            <span class="bin-info-label">BIN</span>
+                            <span class="bin-info-value" style="color: #ff6a00;">${binNumber} - Error</span>
+                        </div>
+                    `;
+                    container.appendChild(errorDiv);
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            document.getElementById('binStats').style.display = 'block';
+            document.getElementById('totalDatabase').textContent = totalDatabaseBINs.toLocaleString();
+            document.getElementById('checkedBins').textContent = checkedBINsSet.size.toLocaleString();
+            
+            document.getElementById('binProgressBar').style.display = 'none';
+            btn.disabled = false;
+            btn.textContent = 'Check BINs';
+        }
+
+        function copyAllCards() {
+            const allCards = generatedCardsList.join('\n');
+            navigator.clipboard.writeText(allCards);
+            
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => {
+                btn.textContent = originalText;
+            }, 2000);
+        }
+
+        function copyAllBINs() {
+            const allBINs = generatedBINsList.join('\n');
+            navigator.clipboard.writeText(allBINs);
+            
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => {
+                btn.textContent = originalText;
+            }, 2000);
+        }
+
+        function clearCards() {
+            generatedCardsList = [];
+            document.getElementById('cardsResultBox').innerHTML = '';
+            document.getElementById('cardsResultBox').style.display = 'none';
+            document.getElementById('copyButtons').style.display = 'none';
+        }
+
+        function clearBINs() {
+            generatedBINsList = [];
+            document.getElementById('binResultBox').innerHTML = '';
+            document.getElementById('binResultBox').style.display = 'none';
+            document.getElementById('binCopyButtons').style.display = 'none';
+        }
+
+        let isChecking = false;
+
+        async function checkCards() {
+            if (isChecking) return;
+            
+            const cardsInput = document.getElementById('cardsInput').value;
+            const cards = cardsInput.split('\n').filter(line => line.trim() !== '');
+            
+            if (cards.length === 0) {
+                alert('Please enter at least one card');
+                return;
+            }
+
+            isChecking = true;
+            document.getElementById('checkBtn').disabled = true;
+            document.getElementById('checkBtn').innerHTML = 'Checking<span class="loading-spinner"></span>';
+            document.getElementById('checkerResults').innerHTML = '';
+            document.getElementById('progressBar').style.display = 'block';
+            
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i].trim();
+                
+                const progress = ((i + 1) / cards.length) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+                
+                try {
+                    const response = await fetch('/check', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ card })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (!result.message || result.message.trim() === '') {
+                        result.message = "The card didn't go through stripe's server, Try again";
+                        result.status = 'UNKNOWN';
+                    }
+                    
+                    displayResult(result);
+                } catch (error) {
+                    displayResult({
+                        card: card,
+                        status: 'error',
+                        message: 'Network error'
+                    });
+                }
+                
+                if (i < cards.length - 1) {
+                    await countdown(7);
+                }
+            }
+            
+            isChecking = false;
+            document.getElementById('checkBtn').disabled = false;
+            document.getElementById('checkBtn').textContent = 'Check Cards';
+            document.getElementById('progressBar').style.display = 'none';
+            document.getElementById('countdown').style.display = 'none';
+        }
+
+        function displayResult(result) {
+            const resultsDiv = document.getElementById('checkerResults');
+            const resultCard = document.createElement('div');
+            resultCard.className = `card-result ${result.status.toLowerCase()}`;
+            
+            const statusClass = result.status.toLowerCase();
+            const statusText = result.status === 'SUCCESS' ? 'APPROVED' : result.status === 'FAIL' ? 'DECLINED' : result.status.toUpperCase();
+            
+            resultCard.innerHTML = `
+                <div class="card-number">${result.card}</div>
+                <div class="card-status">
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                    ${result.message}
+                </div>
+            `;
+            
+            resultsDiv.insertBefore(resultCard, resultsDiv.firstChild);
+        }
+
+        async function countdown(seconds) {
+            const countdownDiv = document.getElementById('countdown');
+            countdownDiv.style.display = 'block';
+            
+            for (let i = seconds; i > 0; i--) {
+                countdownDiv.textContent = `Next card in ${i} second${i > 1 ? 's' : ''}...`;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            countdownDiv.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
